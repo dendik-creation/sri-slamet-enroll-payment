@@ -14,6 +14,7 @@ import { floatToIdCurrency, inputDebounce } from "@/Components/helper/helper";
 import { Button } from "@/Components/ui/button";
 import { router } from "@inertiajs/react";
 import {
+    DatePickerInput,
     MultiSelectSearchInput,
     PaginatorBuilder,
     SelectSearchInput,
@@ -41,26 +42,14 @@ const SalaryMonthlyIndex = ({
     title,
     description,
     salaries,
-    month,
+    start_date,
+    end_date,
     expected_employees,
 }: SalaryMonthlyIndexProps) => {
-    const months: SelectOption[] = [
-        { label: "Januari", value: "1" },
-        { label: "Februari", value: "2" },
-        { label: "Maret", value: "3" },
-        { label: "April", value: "4" },
-        { label: "Mei", value: "5" },
-        { label: "Juni", value: "6" },
-        { label: "Juli", value: "7" },
-        { label: "Agustus", value: "8" },
-        { label: "September", value: "9" },
-        { label: "Oktober", value: "10" },
-        { label: "November", value: "11" },
-        { label: "Desember", value: "12" },
-    ];
     const [onStoring, setOnStoring] = useState(false);
     const [filterData, setFilterData] = useState({
-        month: month || "",
+        start_date: start_date || "",
+        end_date: end_date || "",
     });
 
     const [salaryBonusForm, setSalaryBonusForm] = useState<
@@ -74,21 +63,23 @@ const SalaryMonthlyIndex = ({
         },
     ]);
 
-    const debouncedFilter = inputDebounce((month: string) => {
-        router.get(
-            "/salary-monthly",
-            { month },
-            {
-                preserveState: true,
-                replace: true,
-            }
-        );
-    });
+    const debouncedFilter = inputDebounce(
+        (start_date: string, end_date: string) => {
+            router.get(
+                "/salary-monthly",
+                { start_date, end_date },
+                {
+                    preserveState: true,
+                    replace: true,
+                },
+            );
+        },
+    );
 
-    const handleMonth = (month: string) => {
+    const handleDate = (start_date: string, end_date: string) => {
         setFilterData((prev) => {
-            const newData = { ...prev, month };
-            debouncedFilter(newData.month);
+            const newData = { ...prev, start_date, end_date };
+            debouncedFilter(newData.start_date, newData.end_date);
             return newData;
         });
     };
@@ -96,7 +87,7 @@ const SalaryMonthlyIndex = ({
     const handleChangeBonus = (
         index: number,
         field: keyof SalaryBonusFormProps,
-        value: any
+        value: any,
     ) => {
         setSalaryBonusForm((prev) => {
             const newForm = [...prev];
@@ -154,7 +145,7 @@ const SalaryMonthlyIndex = ({
             if (bonus.amount === undefined || Number(bonus.amount) <= 0) {
                 BlastToaster(
                     "error",
-                    "Nominal bonus wajib diisi dan lebih dari 0"
+                    "Nominal bonus wajib diisi dan lebih dari 0",
                 );
                 return false;
             }
@@ -168,7 +159,7 @@ const SalaryMonthlyIndex = ({
             ) {
                 BlastToaster(
                     "error",
-                    "Pilih minimal satu karyawan untuk bonus tertentu"
+                    "Pilih minimal satu karyawan untuk bonus tertentu",
                 );
                 return false;
             }
@@ -183,14 +174,15 @@ const SalaryMonthlyIndex = ({
             "/salary-monthly/store",
             {
                 with_print,
-                month: filterData.month,
+                start_date: filterData.start_date,
+                end_date: filterData.end_date,
                 bonuses: salaryBonusForm,
             },
             {
                 preserveState: true,
                 replace: true,
                 onFinish: () => setOnStoring(false),
-            }
+            },
         );
     };
 
@@ -201,18 +193,34 @@ const SalaryMonthlyIndex = ({
             <div className="flex lg:flex-row flex-col lg:gap-0 gap-3 items-start lg:items-center justify-between mb-4">
                 <div className="flex-1 flex items-center justify-between relative w-full">
                     <div className="flex items-center w-full gap-3">
-                        <span>Data ditampilkan untuk bulan</span>
-                        <div className="w-1/4">
-                            <SelectSearchInput
-                                value={filterData.month}
-                                onChange={(month) =>
-                                    handleMonth(String(month || ""))
+                        <span>Data ditampilkan untuk tanggal</span>
+                        <DatePickerInput
+                            className="w-fit"
+                            value={
+                                filterData.start_date && filterData.end_date
+                                    ? {
+                                          from: new Date(filterData.start_date),
+                                          to: new Date(filterData.end_date),
+                                      }
+                                    : undefined
+                            }
+                            placeholder="Pilih rentang tanggal"
+                            mode="range"
+                            onChange={(dateRange) => {
+                                if (
+                                    dateRange &&
+                                    typeof dateRange === "string"
+                                ) {
+                                    const [start, end] = dateRange.split(" - ");
+                                    handleDate(
+                                        start?.trim() || "",
+                                        end?.trim() || "",
+                                    );
+                                } else {
+                                    handleDate("", "");
                                 }
-                                placeholder="Pilih bulan"
-                                options={months}
-                                removeValue={() => handleMonth("")}
-                            />
-                        </div>
+                            }}
+                        />
                     </div>
                     <Dialog>
                         <DialogTrigger asChild>
@@ -256,7 +264,7 @@ const SalaryMonthlyIndex = ({
                                         salaryBonusForm.map(
                                             (
                                                 bonus: SalaryBonusFormProps,
-                                                index: number
+                                                index: number,
                                             ) => (
                                                 <div
                                                     key={index}
@@ -276,7 +284,7 @@ const SalaryMonthlyIndex = ({
                                                                     index,
                                                                     "bonus_type",
                                                                     e.target
-                                                                        .value
+                                                                        .value,
                                                                 )
                                                             }
                                                         />
@@ -293,7 +301,7 @@ const SalaryMonthlyIndex = ({
                                                                     index,
                                                                     "amount",
                                                                     e.target
-                                                                        .value
+                                                                        .value,
                                                                 )
                                                             }
                                                         />
@@ -320,14 +328,14 @@ const SalaryMonthlyIndex = ({
                                                                 handleChangeBonus(
                                                                     index,
                                                                     "target_employee",
-                                                                    value
+                                                                    value,
                                                                 )
                                                             }
                                                             removeValue={() =>
                                                                 handleChangeBonus(
                                                                     index,
                                                                     "target_employee",
-                                                                    undefined
+                                                                    undefined,
                                                                 )
                                                             }
                                                             className="h-9"
@@ -340,7 +348,7 @@ const SalaryMonthlyIndex = ({
                                                                 values={
                                                                     bonus.employee_id?.map(
                                                                         (id) =>
-                                                                            id.toString()
+                                                                            id.toString(),
                                                                     ) || []
                                                                 }
                                                                 placeholder="Pilih karyawan"
@@ -348,19 +356,19 @@ const SalaryMonthlyIndex = ({
                                                                     expected_employees
                                                                 }
                                                                 onChange={(
-                                                                    values
+                                                                    values,
                                                                 ) =>
                                                                     handleChangeBonus(
                                                                         index,
                                                                         "employee_id",
                                                                         values.map(
                                                                             (
-                                                                                v
+                                                                                v,
                                                                             ) =>
                                                                                 Number(
-                                                                                    v
-                                                                                )
-                                                                        )
+                                                                                    v,
+                                                                                ),
+                                                                        ),
                                                                     )
                                                                 }
                                                             />
@@ -373,7 +381,7 @@ const SalaryMonthlyIndex = ({
                                                             size={"icon"}
                                                             onClick={() =>
                                                                 handleRemoveBonus(
-                                                                    index
+                                                                    index,
                                                                 )
                                                             }
                                                         >
@@ -384,7 +392,7 @@ const SalaryMonthlyIndex = ({
                                                         </Button>
                                                     )}
                                                 </div>
-                                            )
+                                            ),
                                         )}
                                 </div>
                             </DialogHeader>

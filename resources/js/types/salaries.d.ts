@@ -103,16 +103,16 @@ export type SalaryDailyPrintProps = PageTitleProps & {
 
 export type SalaryMonthlyIndexProps = PageTitleProps & {
     salaries: PaginationData<SalaryView>;
-    month: string;
-    year: string;
+    start_date: string;
+    end_date: string;
     description: string;
     expected_employees: SelectOption[];
 };
 
 export type SalaryMonthlyPrintProps = PageTitleProps & {
     salaries: SalaryFinal[];
-    month: string;
-    year?: string;
+    start_date: string;
+    end_date: string;
     total_remaining_instalment: number;
 };
 

@@ -7,15 +7,15 @@ const SalaryMonthlyPrint = ({
     title,
     description,
     salaries,
-    year,
-    month,
+    start_date,
+    end_date,
     total_remaining_instalment,
 }: SalaryMonthlyPrintProps) => {
     const subheader = (
         <>
-            <strong>Bulan:</strong>{" "}
+            <strong>Rentang Tanggal:</strong>{" "}
             <span style={{ fontFamily: "'Courier New', Courier, monospace" }}>
-                {month || "Tidak Diketahui"} {year ? `Tahun: ${year}` : ""}
+                {ymdToIdDate(start_date)} - {ymdToIdDate(end_date)}
             </span>
         </>
     );
@@ -23,8 +23,8 @@ const SalaryMonthlyPrint = ({
     const totalGajiBulanan = Number(
         salaries.reduce(
             (sum, s) => Number(sum + (s.employee?.salary_per_month || 0)),
-            0
-        )
+            0,
+        ),
     );
     const totalJamsos = Number(
         salaries.reduce(
@@ -33,25 +33,25 @@ const SalaryMonthlyPrint = ({
                 (s.deductions
                     ? s.deductions.reduce(
                           (t, d) => Number(t + (d.amount || 0)),
-                          0
+                          0,
                       )
                     : 0),
-            0
-        )
+            0,
+        ),
     );
     const totalLembur = Number(
-        salaries.reduce((sum, s) => Number(sum + (s.overtime_salary || 0)), 0)
+        salaries.reduce((sum, s) => Number(sum + (s.overtime_salary || 0)), 0),
     );
     const totalAngsuran = Number(
         salaries.reduce(
             (sum, s) =>
                 Number(sum + Number(s.instalment_payment?.payment_value || 0)),
-            0
-        )
+            0,
+        ),
     );
     const totalKeseluruhan = Number(
         salaries.reduce((sum, s) => Number(sum + (s.net_salary || 0)), 0) +
-            Number(totalAngsuran)
+            Number(totalAngsuran),
     );
 
     const subfooter = (
@@ -252,7 +252,7 @@ const SalaryMonthlyPrint = ({
                                 }}
                             >
                                 {floatToIdCurrency(
-                                    salary.employee.salary_per_month || 0
+                                    salary.employee.salary_per_month || 0,
                                 )}
                             </td>
                             <td
@@ -266,8 +266,8 @@ const SalaryMonthlyPrint = ({
                                     salary.deductions?.reduce(
                                         (total, deduction) =>
                                             total + (deduction.amount || 0),
-                                        0
-                                    ) || 0
+                                        0,
+                                    ) || 0,
                                 )}
                             </td>
                             <td
@@ -279,7 +279,7 @@ const SalaryMonthlyPrint = ({
                             >
                                 {floatToIdCurrency(
                                     salary.instalment_payment?.payment_value ||
-                                        0
+                                        0,
                                 )}
                             </td>
                             <td
@@ -293,8 +293,8 @@ const SalaryMonthlyPrint = ({
                                     salary.bonuses?.reduce(
                                         (total, bonus) =>
                                             total + (bonus.amount || 0),
-                                        0
-                                    ) || 0
+                                        0,
+                                    ) || 0,
                                 )}
                             </td>
                             <td

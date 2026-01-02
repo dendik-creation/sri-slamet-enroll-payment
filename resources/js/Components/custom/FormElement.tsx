@@ -30,6 +30,7 @@ import "filepond/dist/filepond.min.css";
 import FilePondPluginFileValidateType from "filepond-plugin-file-validate-type";
 import { ymdToIdDate } from "../helper/helper";
 import { SelectOption } from "@/types/global";
+import { Link } from "@inertiajs/react";
 
 registerPlugin(FilePondPluginFileValidateType);
 
@@ -590,11 +591,12 @@ export const PaginatorBuilder = ({
 
                     const pageNum = page as number;
                     const isActive = pageNum === currentPage;
-
+                    const eachPageUrl = new URL(window.location.href);
+                    eachPageUrl.searchParams.set("page", pageNum.toString());
                     return (
                         <PaginationItem key={pageNum}>
-                            <a
-                                href={`?page=${pageNum}`}
+                            <Link
+                                href={eachPageUrl.toString()}
                                 className={cn(
                                     "flex h-9 w-9 items-center justify-center rounded-md text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
                                     isActive &&
@@ -602,7 +604,7 @@ export const PaginatorBuilder = ({
                                 )}
                             >
                                 {pageNum}
-                            </a>
+                            </Link>
                         </PaginationItem>
                     );
                 })}

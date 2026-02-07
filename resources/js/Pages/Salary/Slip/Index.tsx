@@ -98,6 +98,7 @@ const SalarySlipIndex = ({
         start_date: filterData.start_date || "",
         end_date: filterData.end_date || "",
         month: (new Date().getMonth() + 1).toString(),
+        year: new Date().getFullYear().toString(),
     });
 
     const validateLeggerForm = (): boolean => {
@@ -110,7 +111,10 @@ const SalarySlipIndex = ({
         ) {
             return false;
         }
-        if (leggerData.employee_type === "monthly" && !leggerData.month) {
+        if (
+            leggerData.employee_type === "monthly" &&
+            (!leggerData.month || !leggerData.year)
+        ) {
             return false;
         }
         return true;
@@ -123,9 +127,19 @@ const SalarySlipIndex = ({
             return;
         }
         if (leggerData.employee_type == "daily") {
-            getLegger("/salary-daily/print");
+            getLegger(
+                "/salary-daily/print?start_date=" +
+                    leggerData.start_date +
+                    "&end_date=" +
+                    leggerData.end_date,
+            );
         } else if (leggerData.employee_type == "monthly") {
-            getLegger("/salary-monthly/print");
+            getLegger(
+                "/salary-monthly/print?month=" +
+                    leggerData.month +
+                    "&year=" +
+                    leggerData.year,
+            );
         }
     };
 
@@ -142,7 +156,7 @@ const SalarySlipIndex = ({
                 filterData.employee_id,
                 filterData.start_date,
                 filterData.end_date,
-                filterData.employee_type
+                filterData.employee_type,
             );
 
             previousFilterData.current = {
@@ -177,7 +191,7 @@ const SalarySlipIndex = ({
             employee_id: string,
             start_date: string,
             end_date: string,
-            employee_type: string
+            employee_type: string,
         ) => {
             router.get(
                 "/salary-slip",
@@ -185,9 +199,9 @@ const SalarySlipIndex = ({
                 {
                     preserveState: true,
                     replace: true,
-                }
+                },
             );
-        }
+        },
     );
 
     const handleChangeFilter = (value: string, name: string) => {
@@ -247,7 +261,7 @@ const SalarySlipIndex = ({
                                     onChange={(employee_id) =>
                                         handleChangeFilter(
                                             String(employee_id || ""),
-                                            "employee_id"
+                                            "employee_id",
                                         )
                                     }
                                     placeholder="Pilih Nama Karyawan"
@@ -263,7 +277,7 @@ const SalarySlipIndex = ({
                                     onChange={(employee_type) =>
                                         handleChangeFilter(
                                             String(employee_type || ""),
-                                            "employee_type"
+                                            "employee_type",
                                         )
                                     }
                                     placeholder="Pilih Tipe Gaji"
@@ -327,14 +341,14 @@ const SalarySlipIndex = ({
                                                             setLeggerData(
                                                                 "employee_type",
                                                                 String(
-                                                                    value || ""
-                                                                )
+                                                                    value || "",
+                                                                ),
                                                             )
                                                         }
                                                         removeValue={() =>
                                                             setLeggerData(
                                                                 "employee_type",
-                                                                ""
+                                                                "",
                                                             )
                                                         }
                                                     />
@@ -353,10 +367,10 @@ const SalarySlipIndex = ({
                                                                 leggerData.end_date
                                                                     ? {
                                                                           from: new Date(
-                                                                              leggerData.start_date
+                                                                              leggerData.start_date,
                                                                           ),
                                                                           to: new Date(
-                                                                              leggerData.end_date
+                                                                              leggerData.end_date,
                                                                           ),
                                                                       }
                                                                     : undefined
@@ -364,7 +378,7 @@ const SalarySlipIndex = ({
                                                             placeholder="Pilih rentang tanggal"
                                                             mode="range"
                                                             onChange={(
-                                                                dateRange
+                                                                dateRange,
                                                             ) => {
                                                                 if (
                                                                     dateRange &&
@@ -376,24 +390,24 @@ const SalarySlipIndex = ({
                                                                         end,
                                                                     ] =
                                                                         dateRange.split(
-                                                                            " - "
+                                                                            " - ",
                                                                         );
                                                                     setLeggerData(
                                                                         "start_date",
-                                                                        start
+                                                                        start,
                                                                     );
                                                                     setLeggerData(
                                                                         "end_date",
-                                                                        end
+                                                                        end,
                                                                     );
                                                                 } else {
                                                                     setLeggerData(
                                                                         "start_date",
-                                                                        ""
+                                                                        "",
                                                                     );
                                                                     setLeggerData(
                                                                         "end_date",
-                                                                        ""
+                                                                        "",
                                                                     );
                                                                 }
                                                             }}
@@ -404,31 +418,73 @@ const SalarySlipIndex = ({
                                                     "monthly" && (
                                                     <div className="flex flex-col w-full">
                                                         <label className="text-base mb-1 after:content-['*'] after:text-red-500 after:ml-1">
-                                                            Bulan
+                                                            Bulan & Tahun
                                                         </label>
-                                                        <SelectSearchInput
-                                                            value={
-                                                                leggerData.month ||
-                                                                ""
-                                                            }
-                                                            options={months}
-                                                            placeholder="Pilih bulan"
-                                                            onChange={(value) =>
-                                                                setLeggerData(
-                                                                    "month",
-                                                                    String(
-                                                                        value ||
-                                                                            ""
-                                                                    )
-                                                                )
-                                                            }
-                                                            removeValue={() =>
-                                                                setLeggerData(
-                                                                    "month",
-                                                                    ""
-                                                                )
-                                                            }
-                                                        />
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-full">
+                                                                <SelectSearchInput
+                                                                    value={
+                                                                        leggerData.month ||
+                                                                        ""
+                                                                    }
+                                                                    options={
+                                                                        months
+                                                                    }
+                                                                    placeholder="Pilih bulan"
+                                                                    onChange={(
+                                                                        value,
+                                                                    ) =>
+                                                                        setLeggerData(
+                                                                            "month",
+                                                                            String(
+                                                                                value ||
+                                                                                    "",
+                                                                            ),
+                                                                        )
+                                                                    }
+                                                                    removeValue={() =>
+                                                                        setLeggerData(
+                                                                            "month",
+                                                                            "",
+                                                                        )
+                                                                    }
+                                                                />
+                                                            </div>
+                                                            <div className="w-full">
+                                                                <SelectSearchInput
+                                                                    value={
+                                                                        leggerData.year ||
+                                                                        ""
+                                                                    }
+                                                                    options={Array.from(
+                                                                        {
+                                                                            length: 11,
+                                                                        },
+                                                                        (
+                                                                            _,
+                                                                            i,
+                                                                        ) => {
+                                                                            const yr =
+                                                                                new Date().getFullYear() -
+                                                                                5 +
+                                                                                i;
+                                                                            return {
+                                                                                label: yr.toString(),
+                                                                                value: yr.toString(),
+                                                                            };
+                                                                        },
+                                                                    )}
+                                                                    onChange={(
+                                                                        value,
+                                                                    ) => {
+                                                                        setLeggerData(
+                                                                            "year",
+                                                                            value.toString(),
+                                                                        );
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
@@ -548,7 +604,7 @@ const SalarySlipIndex = ({
                                     <TableCell>
                                         {salary.overtime_salary > 0
                                             ? floatToIdCurrency(
-                                                  salary.overtime_salary
+                                                  salary.overtime_salary,
                                               )
                                             : "-"}
                                     </TableCell>
@@ -566,11 +622,11 @@ const SalarySlipIndex = ({
                                                             }
                                                             {" ("}
                                                             {floatToIdCurrency(
-                                                                deduction.amount
+                                                                deduction.amount,
                                                             )}
                                                             {")"}
                                                         </li>
-                                                    )
+                                                    ),
                                                 )}
                                             {salary.instalment_payment && (
                                                 <li>
@@ -584,7 +640,7 @@ const SalarySlipIndex = ({
                                                     {floatToIdCurrency(
                                                         salary
                                                             .instalment_payment
-                                                            .payment_value
+                                                            .payment_value,
                                                     )}
                                                     {")"}
                                                 </li>
@@ -601,8 +657,8 @@ const SalarySlipIndex = ({
                                                   salary.bonuses.reduce(
                                                       (acc, bonus) =>
                                                           acc + bonus.amount,
-                                                      0
-                                                  )
+                                                      0,
+                                                  ),
                                               )
                                             : "-"}
                                     </TableCell>

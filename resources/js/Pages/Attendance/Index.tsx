@@ -28,7 +28,7 @@ import {
     SearchInput,
     SelectSearchInput,
 } from "@/Components/custom/FormElement";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Attendance, AttendanceIndexProps } from "@/types/atttendance";
 import ModalImport from "@/Components/custom/ModalImport";
 import BlastToaster from "@/Components/custom/BlastToaster";
@@ -43,6 +43,22 @@ import {
 } from "@/Components/ui/dialog";
 import { Input } from "@/Components/ui/input";
 import ConfirmDialog from "@/Components/custom/ConfirmDialog";
+import { SelectOption } from "@/types/global";
+
+const months: SelectOption[] = [
+    { label: "Januari", value: "1" },
+    { label: "Februari", value: "2" },
+    { label: "Maret", value: "3" },
+    { label: "April", value: "4" },
+    { label: "Mei", value: "5" },
+    { label: "Juni", value: "6" },
+    { label: "Juli", value: "7" },
+    { label: "Agustus", value: "8" },
+    { label: "September", value: "9" },
+    { label: "Oktober", value: "10" },
+    { label: "November", value: "11" },
+    { label: "Desember", value: "12" },
+];
 
 const AttendanceIndex = ({
     title,
@@ -80,8 +96,11 @@ const AttendanceIndex = ({
         clearErrors: formClearErr,
     } = useForm({
         employee_id: null as number | null,
-        period_start: null as string | null,
-        period_end: null as string | null,
+        month: null as string | null,
+        year: new Date().getFullYear().toString(),
+        employee_type: null as string | null,
+        period_start: filter.period_start || (null as string | null),
+        period_end: filter.period_end || (null as string | null),
         work_days: null as number | null,
         overtime: null as number | null,
         mode: "add" as "add" | "edit",
@@ -91,6 +110,45 @@ const AttendanceIndex = ({
 
     const handleFormChange = (field: keyof typeof formData, value: any) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
+        if (field == "employee_id") {
+            const selectedEmployee = employees.find(
+                (emp) => emp.value == value.toString(),
+            );
+            if (selectedEmployee) {
+                setFormData((prev) => ({
+                    ...prev,
+                    employee_type:
+                        selectedEmployee.other_info?.salary_type || null,
+                }));
+            } else {
+                setFormData((prev) => ({ ...prev, employee_type: null }));
+            }
+        }
+    };
+
+    useEffect(() => {
+        if (formData.month && formData.year) {
+            const { period_start, period_end, work_days } =
+                convertMonthYearToDateRange(formData.month, formData.year);
+            setFormData((prev) => ({
+                ...prev,
+                period_start,
+                period_end,
+                work_days,
+            }));
+        }
+    }, [formData.month, formData.year]);
+
+    const convertMonthYearToDateRange = (month: string, year: string) => {
+        const monthNum = parseInt(month, 10);
+        const yearNum = parseInt(year, 10);
+
+        const period_start = `${year}-${month.padStart(2, "0")}-01`;
+
+        const lastDay = new Date(yearNum, monthNum, 0).getDate();
+        const period_end = `${year}-${month.padStart(2, "0")}-${lastDay.toString().padStart(2, "0")}`;
+        const work_days = lastDay;
+        return { period_start, period_end, work_days };
     };
 
     const debouncedFilter = inputDebounce(
@@ -98,7 +156,7 @@ const AttendanceIndex = ({
             search: string,
             period_start: string,
             period_end: string,
-            employee_type: string | null
+            employee_type: string | null,
         ) => {
             router.get(
                 "/attendance",
@@ -106,9 +164,9 @@ const AttendanceIndex = ({
                 {
                     preserveState: true,
                     replace: true,
-                }
+                },
             );
-        }
+        },
     );
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,7 +177,7 @@ const AttendanceIndex = ({
                 newData.search,
                 newData.period_start,
                 newData.period_end,
-                newData.employee_type
+                newData.employee_type,
             );
             return newData;
         });
@@ -132,7 +190,7 @@ const AttendanceIndex = ({
                 newData.search,
                 newData.period_start,
                 newData.period_end,
-                newData.employee_type
+                newData.employee_type,
             );
             return newData;
         });
@@ -145,7 +203,7 @@ const AttendanceIndex = ({
                 newData.search,
                 newData.period_start,
                 newData.period_end,
-                newData.employee_type
+                newData.employee_type,
             );
             return newData;
         });
@@ -172,7 +230,7 @@ const AttendanceIndex = ({
 
     const getEmployeeSalaryType = (employee_id: number): string | null => {
         const employee = employees.find(
-            (emp) => emp.value == employee_id.toString()
+            (emp) => emp.value == employee_id.toString(),
         );
         if (
             employee &&
@@ -209,7 +267,7 @@ const AttendanceIndex = ({
         ) {
             setFormError(
                 "work_days",
-                "Jumlah hari kerja tidak boleh lebih dari 7"
+                "Jumlah hari kerja tidak boleh lebih dari 7",
             );
             isValid = false;
         }
@@ -219,14 +277,28 @@ const AttendanceIndex = ({
         ) {
             setFormError(
                 "work_days",
-                "Jumlah hari kerja tidak boleh lebih dari 31"
+                "Jumlah hari kerja tidak boleh lebih dari 31",
             );
+            isValid = false;
+        }
+        if (
+            getEmployeeSalaryType(formData.employee_id!) === "monthly" &&
+            (formData.month == null || formData.month == "")
+        ) {
+            setFormError("month", "Bulan harus dipilih");
+            isValid = false;
+        }
+        if (
+            getEmployeeSalaryType(formData.employee_id!) === "monthly" &&
+            (formData.year == null || formData.year == "")
+        ) {
+            setFormError("year", "Tahun harus dipilih");
             isValid = false;
         }
         if (formData.overtime !== null && Number(formData.overtime) > 9.9) {
             setFormError(
                 "overtime",
-                "Jumlah lembur tidak boleh lebih dari 9.9 jam"
+                "Jumlah lembur tidak boleh lebih dari 9.9 jam",
             );
             isValid = false;
         }
@@ -234,10 +306,17 @@ const AttendanceIndex = ({
     };
 
     const handleEditMode = (att: Attendance) => {
+        const periodStartDate = new Date(att.period_start);
+        const month = (periodStartDate.getMonth() + 1).toString();
+        const year = periodStartDate.getFullYear().toString();
+
         setFormData({
             employee_id: att.employee.id,
             period_start: att.period_start,
             period_end: att.period_end,
+            month: month,
+            year: year,
+            employee_type: getEmployeeSalaryType(att.employee.id),
             work_days: att.work_days,
             overtime: att.overtime,
             mode: "edit",
@@ -325,7 +404,7 @@ const AttendanceIndex = ({
                                 const [start, end] = dateRange.split(" - ");
                                 handleDate(
                                     start?.trim() || "",
-                                    end?.trim() || ""
+                                    end?.trim() || "",
                                 );
                             } else {
                                 handleDate("", "");
@@ -394,13 +473,13 @@ const AttendanceIndex = ({
                                                     onChange={(value) =>
                                                         handleFormChange(
                                                             "employee_id",
-                                                            value.toString()
+                                                            value.toString(),
                                                         )
                                                     }
                                                     removeValue={() =>
                                                         handleFormChange(
                                                             "employee_id",
-                                                            ""
+                                                            "",
                                                         )
                                                     }
                                                 />
@@ -414,65 +493,152 @@ const AttendanceIndex = ({
                                             </div>
                                             <div className="flex flex-col w-full">
                                                 <label className="text-base mb-1 after:content-['*'] after:text-red-500 after:ml-1">
-                                                    Rentang Tanggal Kehadiran
+                                                    {formData.employee_type ==
+                                                    "monthly"
+                                                        ? "Bulan dan Tahun Kehadiran"
+                                                        : "Rentang Tanggal Kehadiran"}
                                                 </label>
-                                                <DatePickerInput
-                                                    className=""
-                                                    value={
-                                                        formData.period_start &&
-                                                        formData.period_end
-                                                            ? {
-                                                                  from: new Date(
-                                                                      formData.period_start
-                                                                  ),
-                                                                  to: new Date(
-                                                                      formData.period_end
-                                                                  ),
-                                                              }
-                                                            : undefined
-                                                    }
-                                                    placeholder="Pilih rentang tanggal"
-                                                    mode="range"
-                                                    onChange={(dateRange) => {
-                                                        if (
-                                                            dateRange &&
-                                                            typeof dateRange ===
-                                                                "string"
-                                                        ) {
-                                                            const [start, end] =
-                                                                dateRange.split(
-                                                                    " - "
-                                                                );
-                                                            handleFormChange(
-                                                                "period_start",
-                                                                start?.trim() ||
-                                                                    null
-                                                            );
-                                                            handleFormChange(
-                                                                "period_end",
-                                                                end?.trim() ||
-                                                                    null
-                                                            );
-                                                        } else {
-                                                            handleFormChange(
-                                                                "period_start",
-                                                                null
-                                                            );
-                                                            handleFormChange(
-                                                                "period_end",
-                                                                null
-                                                            );
-                                                        }
-                                                    }}
-                                                />
-                                                {formErrors.period_start &&
-                                                    formErrors.period_end && (
-                                                        <ErrorInput
-                                                            error={
-                                                                "Rentang Tanggal Wajib Diisi"
+                                                {formData.employee_type ==
+                                                    "daily" ||
+                                                formData.employee_type ==
+                                                    null ? (
+                                                    <div className="">
+                                                        <DatePickerInput
+                                                            className=""
+                                                            value={
+                                                                formData.period_start &&
+                                                                formData.period_end
+                                                                    ? {
+                                                                          from: new Date(
+                                                                              formData.period_start,
+                                                                          ),
+                                                                          to: new Date(
+                                                                              formData.period_end,
+                                                                          ),
+                                                                      }
+                                                                    : undefined
                                                             }
+                                                            placeholder="Pilih rentang tanggal"
+                                                            mode="range"
+                                                            onChange={(
+                                                                dateRange,
+                                                            ) => {
+                                                                if (
+                                                                    dateRange &&
+                                                                    typeof dateRange ===
+                                                                        "string"
+                                                                ) {
+                                                                    const [
+                                                                        start,
+                                                                        end,
+                                                                    ] =
+                                                                        dateRange.split(
+                                                                            " - ",
+                                                                        );
+                                                                    handleFormChange(
+                                                                        "period_start",
+                                                                        start?.trim() ||
+                                                                            null,
+                                                                    );
+                                                                    handleFormChange(
+                                                                        "period_end",
+                                                                        end?.trim() ||
+                                                                            null,
+                                                                    );
+                                                                } else {
+                                                                    handleFormChange(
+                                                                        "period_start",
+                                                                        null,
+                                                                    );
+                                                                    handleFormChange(
+                                                                        "period_end",
+                                                                        null,
+                                                                    );
+                                                                }
+                                                            }}
                                                         />
-                                                    )}
+                                                        {formErrors.period_start &&
+                                                            formErrors.period_end && (
+                                                                <ErrorInput
+                                                                    error={
+                                                                        "Rentang Tanggal Wajib Diisi"
+                                                                    }
+                                                                />
+                                                            )}
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-full">
+                                                            <SelectSearchInput
+                                                                value={
+                                                                    formData.month ||
+                                                                    ""
+                                                                }
+                                                                options={months}
+                                                                placeholder="Pilih bulan"
+                                                                onChange={(
+                                                                    value,
+                                                                ) =>
+                                                                    handleFormChange(
+                                                                        "month",
+                                                                        value.toString(),
+                                                                    )
+                                                                }
+                                                                removeValue={() =>
+                                                                    handleFormChange(
+                                                                        "month",
+                                                                        "",
+                                                                    )
+                                                                }
+                                                            />
+                                                            {formErrors.month && (
+                                                                <ErrorInput
+                                                                    error={
+                                                                        "Bulan wajib diisi"
+                                                                    }
+                                                                />
+                                                            )}
+                                                        </div>
+                                                        <div className="w-full">
+                                                            <SelectSearchInput
+                                                                value={
+                                                                    formData.year ||
+                                                                    ""
+                                                                }
+                                                                options={Array.from(
+                                                                    {
+                                                                        length: 11,
+                                                                    },
+                                                                    (_, i) => {
+                                                                        const yr =
+                                                                            new Date().getFullYear() -
+                                                                            5 +
+                                                                            i;
+                                                                        return {
+                                                                            label: yr.toString(),
+                                                                            value: yr.toString(),
+                                                                        };
+                                                                    },
+                                                                )}
+                                                                onChange={(
+                                                                    value,
+                                                                ) => {
+                                                                    handleFormChange(
+                                                                        "year",
+                                                                        value.toString(),
+                                                                    );
+                                                                }}
+                                                            />
+                                                            {formErrors.year && (
+                                                                <ErrorInput
+                                                                    error={
+                                                                        "Tahun wajib diisi"
+                                                                    }
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="flex flex-col w-full">
                                                 <label className="text-base mb-1 after:content-['*'] after:text-red-500 after:ml-1">
@@ -492,9 +658,9 @@ const AttendanceIndex = ({
                                                             e.target.value
                                                                 ? parseFloat(
                                                                       e.target
-                                                                          .value
+                                                                          .value,
                                                                   )
-                                                                : null
+                                                                : null,
                                                         )
                                                     }
                                                 />
@@ -524,9 +690,9 @@ const AttendanceIndex = ({
                                                             e.target.value
                                                                 ? parseFloat(
                                                                       e.target
-                                                                          .value
+                                                                          .value,
                                                                   )
-                                                                : null
+                                                                : null,
                                                         )
                                                     }
                                                 />
@@ -640,7 +806,7 @@ const AttendanceIndex = ({
                                                             className="cursor-pointer"
                                                             onClick={() =>
                                                                 handleEditMode(
-                                                                    att
+                                                                    att,
                                                                 )
                                                             }
                                                         >
@@ -652,7 +818,7 @@ const AttendanceIndex = ({
                                                             onSubmit={(e) =>
                                                                 handleFormSubmit(
                                                                     e,
-                                                                    att.id
+                                                                    att.id,
                                                                 )
                                                             }
                                                         >
@@ -686,17 +852,17 @@ const AttendanceIndex = ({
                                                                                 }
                                                                                 placeholder="Pilih karyawan"
                                                                                 onChange={(
-                                                                                    value
+                                                                                    value,
                                                                                 ) =>
                                                                                     handleFormChange(
                                                                                         "employee_id",
-                                                                                        value.toString()
+                                                                                        value.toString(),
                                                                                     )
                                                                                 }
                                                                                 removeValue={() =>
                                                                                     handleFormChange(
                                                                                         "employee_id",
-                                                                                        ""
+                                                                                        "",
                                                                                     )
                                                                                 }
                                                                             />
@@ -710,72 +876,157 @@ const AttendanceIndex = ({
                                                                         </div>
                                                                         <div className="flex flex-col w-full">
                                                                             <label className="text-base mb-1 after:content-['*'] after:text-red-500 after:ml-1">
-                                                                                Rentang
-                                                                                Tanggal
-                                                                                Kehadiran
+                                                                                {formData.employee_type ==
+                                                                                "monthly"
+                                                                                    ? "Bulan dan Tahun Kehadiran"
+                                                                                    : "Rentang Tanggal Kehadiran"}
                                                                             </label>
-                                                                            <DatePickerInput
-                                                                                className=""
-                                                                                value={
-                                                                                    formData.period_start &&
-                                                                                    formData.period_end
-                                                                                        ? {
-                                                                                              from: new Date(
-                                                                                                  formData.period_start
-                                                                                              ),
-                                                                                              to: new Date(
-                                                                                                  formData.period_end
-                                                                                              ),
-                                                                                          }
-                                                                                        : undefined
-                                                                                }
-                                                                                placeholder="Pilih rentang tanggal"
-                                                                                mode="range"
-                                                                                onChange={(
-                                                                                    dateRange
-                                                                                ) => {
-                                                                                    if (
-                                                                                        dateRange &&
-                                                                                        typeof dateRange ===
-                                                                                            "string"
-                                                                                    ) {
-                                                                                        const [
-                                                                                            start,
-                                                                                            end,
-                                                                                        ] =
-                                                                                            dateRange.split(
-                                                                                                " - "
-                                                                                            );
-                                                                                        handleFormChange(
-                                                                                            "period_start",
-                                                                                            start?.trim() ||
-                                                                                                null
-                                                                                        );
-                                                                                        handleFormChange(
-                                                                                            "period_end",
-                                                                                            end?.trim() ||
-                                                                                                null
-                                                                                        );
-                                                                                    } else {
-                                                                                        handleFormChange(
-                                                                                            "period_start",
-                                                                                            null
-                                                                                        );
-                                                                                        handleFormChange(
-                                                                                            "period_end",
-                                                                                            null
-                                                                                        );
-                                                                                    }
-                                                                                }}
-                                                                            />
-                                                                            {formErrors.period_start &&
-                                                                                formErrors.period_end && (
-                                                                                    <ErrorInput
-                                                                                        error={
-                                                                                            "Rentang Tanggal Wajib Diisi"
+                                                                            {formData.employee_type ==
+                                                                                "daily" ||
+                                                                            formData.employee_type ==
+                                                                                null ? (
+                                                                                <div className="">
+                                                                                    <DatePickerInput
+                                                                                        className=""
+                                                                                        value={
+                                                                                            formData.period_start &&
+                                                                                            formData.period_end
+                                                                                                ? {
+                                                                                                      from: new Date(
+                                                                                                          formData.period_start,
+                                                                                                      ),
+                                                                                                      to: new Date(
+                                                                                                          formData.period_end,
+                                                                                                      ),
+                                                                                                  }
+                                                                                                : undefined
                                                                                         }
+                                                                                        placeholder="Pilih rentang tanggal"
+                                                                                        mode="range"
+                                                                                        onChange={(
+                                                                                            dateRange,
+                                                                                        ) => {
+                                                                                            if (
+                                                                                                dateRange &&
+                                                                                                typeof dateRange ===
+                                                                                                    "string"
+                                                                                            ) {
+                                                                                                const [
+                                                                                                    start,
+                                                                                                    end,
+                                                                                                ] =
+                                                                                                    dateRange.split(
+                                                                                                        " - ",
+                                                                                                    );
+                                                                                                handleFormChange(
+                                                                                                    "period_start",
+                                                                                                    start?.trim() ||
+                                                                                                        null,
+                                                                                                );
+                                                                                                handleFormChange(
+                                                                                                    "period_end",
+                                                                                                    end?.trim() ||
+                                                                                                        null,
+                                                                                                );
+                                                                                            } else {
+                                                                                                handleFormChange(
+                                                                                                    "period_start",
+                                                                                                    null,
+                                                                                                );
+                                                                                                handleFormChange(
+                                                                                                    "period_end",
+                                                                                                    null,
+                                                                                                );
+                                                                                            }
+                                                                                        }}
                                                                                     />
-                                                                                )}
+                                                                                    {formErrors.period_start &&
+                                                                                        formErrors.period_end && (
+                                                                                            <ErrorInput
+                                                                                                error={
+                                                                                                    "Rentang Tanggal Wajib Diisi"
+                                                                                                }
+                                                                                            />
+                                                                                        )}
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="flex items-center gap-3">
+                                                                                    <div className="w-full">
+                                                                                        <SelectSearchInput
+                                                                                            value={
+                                                                                                formData.month ||
+                                                                                                ""
+                                                                                            }
+                                                                                            options={
+                                                                                                months
+                                                                                            }
+                                                                                            placeholder="Pilih bulan"
+                                                                                            onChange={(
+                                                                                                value,
+                                                                                            ) =>
+                                                                                                handleFormChange(
+                                                                                                    "month",
+                                                                                                    value.toString(),
+                                                                                                )
+                                                                                            }
+                                                                                            removeValue={() =>
+                                                                                                handleFormChange(
+                                                                                                    "month",
+                                                                                                    "",
+                                                                                                )
+                                                                                            }
+                                                                                        />
+                                                                                        {formErrors.month && (
+                                                                                            <ErrorInput
+                                                                                                error={
+                                                                                                    "Bulan wajib diisi"
+                                                                                                }
+                                                                                            />
+                                                                                        )}
+                                                                                    </div>
+                                                                                    <div className="w-full">
+                                                                                        <SelectSearchInput
+                                                                                            value={
+                                                                                                formData.year ||
+                                                                                                ""
+                                                                                            }
+                                                                                            options={Array.from(
+                                                                                                {
+                                                                                                    length: 11,
+                                                                                                },
+                                                                                                (
+                                                                                                    _,
+                                                                                                    i,
+                                                                                                ) => {
+                                                                                                    const yr =
+                                                                                                        new Date().getFullYear() -
+                                                                                                        5 +
+                                                                                                        i;
+                                                                                                    return {
+                                                                                                        label: yr.toString(),
+                                                                                                        value: yr.toString(),
+                                                                                                    };
+                                                                                                },
+                                                                                            )}
+                                                                                            onChange={(
+                                                                                                value,
+                                                                                            ) => {
+                                                                                                handleFormChange(
+                                                                                                    "year",
+                                                                                                    value.toString(),
+                                                                                                );
+                                                                                            }}
+                                                                                        />
+                                                                                        {formErrors.year && (
+                                                                                            <ErrorInput
+                                                                                                error={
+                                                                                                    "Tahun wajib diisi"
+                                                                                                }
+                                                                                            />
+                                                                                        )}
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
                                                                         </div>
                                                                         <div className="flex flex-col w-full">
                                                                             <label className="text-base mb-1 after:content-['*'] after:text-red-500 after:ml-1">
@@ -797,7 +1048,7 @@ const AttendanceIndex = ({
                                                                                     ""
                                                                                 }
                                                                                 onChange={(
-                                                                                    e
+                                                                                    e,
                                                                                 ) =>
                                                                                     handleFormChange(
                                                                                         "work_days",
@@ -807,9 +1058,9 @@ const AttendanceIndex = ({
                                                                                             ? parseFloat(
                                                                                                   e
                                                                                                       .target
-                                                                                                      .value
+                                                                                                      .value,
                                                                                               )
-                                                                                            : null
+                                                                                            : null,
                                                                                     )
                                                                                 }
                                                                             />
@@ -842,7 +1093,7 @@ const AttendanceIndex = ({
                                                                                     ""
                                                                                 }
                                                                                 onChange={(
-                                                                                    e
+                                                                                    e,
                                                                                 ) =>
                                                                                     handleFormChange(
                                                                                         "overtime",
@@ -852,9 +1103,9 @@ const AttendanceIndex = ({
                                                                                             ? parseFloat(
                                                                                                   e
                                                                                                       .target
-                                                                                                      .value
+                                                                                                      .value,
                                                                                               )
-                                                                                            : null
+                                                                                            : null,
                                                                                     )
                                                                                 }
                                                                             />
@@ -915,7 +1166,7 @@ const AttendanceIndex = ({
                                             </div>
                                         </TableCell>
                                     </TableRow>
-                                )
+                                ),
                             )
                         ) : (
                             <TableRow>

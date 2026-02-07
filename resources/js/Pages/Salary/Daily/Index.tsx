@@ -47,6 +47,10 @@ const SalaryDailyIndex = ({
         end_date: end_date || "",
     });
 
+    const [salaryDate, setSalaryDate] = useState<string>(
+        new Date().toISOString().split("T")[0],
+    );
+
     const [salaryBonusForm, setSalaryBonusForm] = useState<
         SalaryBonusFormProps[]
     >([
@@ -68,9 +72,9 @@ const SalaryDailyIndex = ({
                 {
                     preserveState: true,
                     replace: true,
-                }
+                },
             );
-        }
+        },
     );
 
     const handleDate = (start_date: string, end_date: string) => {
@@ -84,7 +88,7 @@ const SalaryDailyIndex = ({
     const handleChangeBonus = (
         index: number,
         field: keyof SalaryBonusFormProps,
-        value: any
+        value: any,
     ) => {
         setSalaryBonusForm((prev) => {
             const newForm = [...prev];
@@ -142,7 +146,7 @@ const SalaryDailyIndex = ({
             if (bonus.amount === undefined || Number(bonus.amount) <= 0) {
                 BlastToaster(
                     "error",
-                    "Nominal bonus wajib diisi dan lebih dari 0"
+                    "Nominal bonus wajib diisi dan lebih dari 0",
                 );
                 return false;
             }
@@ -156,7 +160,7 @@ const SalaryDailyIndex = ({
             ) {
                 BlastToaster(
                     "error",
-                    "Pilih minimal satu karyawan untuk bonus tertentu"
+                    "Pilih minimal satu karyawan untuk bonus tertentu",
                 );
                 return false;
             }
@@ -189,7 +193,7 @@ const SalaryDailyIndex = ({
                     ]);
                     setOnStoring(false);
                 },
-            }
+            },
         );
     };
 
@@ -221,7 +225,7 @@ const SalaryDailyIndex = ({
                                     const [start, end] = dateRange.split(" - ");
                                     handleDate(
                                         start?.trim() || "",
-                                        end?.trim() || ""
+                                        end?.trim() || "",
                                     );
                                 } else {
                                     handleDate("", "");
@@ -256,6 +260,23 @@ const SalaryDailyIndex = ({
                                     karyawan sekaligus (Opsional).
                                 </DialogDescription>
                                 <div className="flex flex-col gap-3">
+                                    <div className="w-fit">
+                                        <label className="mb-1">
+                                            Tanggal Gaji Diberikan Karyawan
+                                        </label>
+                                        <div className="w-full">
+                                            <DatePickerInput
+                                                mode="single"
+                                                placeholder="Pilih tanggal gajian"
+                                                value={salaryDate}
+                                                onChange={(value) =>
+                                                    setSalaryDate(
+                                                        value?.toString() || "",
+                                                    )
+                                                }
+                                            />
+                                        </div>
+                                    </div>
                                     <div className="flex justify-start">
                                         <Button
                                             type="button"
@@ -271,7 +292,7 @@ const SalaryDailyIndex = ({
                                         salaryBonusForm.map(
                                             (
                                                 bonus: SalaryBonusFormProps,
-                                                index: number
+                                                index: number,
                                             ) => (
                                                 <div
                                                     key={index}
@@ -291,7 +312,7 @@ const SalaryDailyIndex = ({
                                                                     index,
                                                                     "bonus_type",
                                                                     e.target
-                                                                        .value
+                                                                        .value,
                                                                 )
                                                             }
                                                         />
@@ -308,7 +329,7 @@ const SalaryDailyIndex = ({
                                                                     index,
                                                                     "amount",
                                                                     e.target
-                                                                        .value
+                                                                        .value,
                                                                 )
                                                             }
                                                         />
@@ -335,14 +356,14 @@ const SalaryDailyIndex = ({
                                                                 handleChangeBonus(
                                                                     index,
                                                                     "target_employee",
-                                                                    value
+                                                                    value,
                                                                 )
                                                             }
                                                             removeValue={() =>
                                                                 handleChangeBonus(
                                                                     index,
                                                                     "target_employee",
-                                                                    undefined
+                                                                    undefined,
                                                                 )
                                                             }
                                                             className="h-9"
@@ -356,8 +377,8 @@ const SalaryDailyIndex = ({
                                                                     bonus.employee_id?.map(
                                                                         (id) =>
                                                                             String(
-                                                                                id
-                                                                            )
+                                                                                id,
+                                                                            ),
                                                                     ) || []
                                                                 }
                                                                 placeholder="Pilih karyawan"
@@ -365,19 +386,19 @@ const SalaryDailyIndex = ({
                                                                     expected_employees
                                                                 }
                                                                 onChange={(
-                                                                    values
+                                                                    values,
                                                                 ) => {
                                                                     handleChangeBonus(
                                                                         index,
                                                                         "employee_id",
                                                                         values.map(
                                                                             (
-                                                                                v
+                                                                                v,
                                                                             ) =>
                                                                                 Number(
-                                                                                    v
-                                                                                )
-                                                                        )
+                                                                                    v,
+                                                                                ),
+                                                                        ),
                                                                     );
                                                                 }}
                                                             />
@@ -390,7 +411,7 @@ const SalaryDailyIndex = ({
                                                             size={"icon"}
                                                             onClick={() =>
                                                                 handleRemoveBonus(
-                                                                    index
+                                                                    index,
                                                                 )
                                                             }
                                                         >
@@ -401,7 +422,7 @@ const SalaryDailyIndex = ({
                                                         </Button>
                                                     )}
                                                 </div>
-                                            )
+                                            ),
                                         )}
                                 </div>
                             </DialogHeader>
@@ -508,14 +529,14 @@ const SalaryDailyIndex = ({
                                         {salary.overtime_salary &&
                                         salary.overtime_salary > 0
                                             ? floatToIdCurrency(
-                                                  salary.overtime_salary
+                                                  salary.overtime_salary,
                                               )
                                             : "-"}
                                     </TableCell>
                                     <TableCell>
                                         {salary.total_deduction > 0
                                             ? floatToIdCurrency(
-                                                  salary.total_deduction
+                                                  salary.total_deduction,
                                               )
                                             : "-"}
                                     </TableCell>

@@ -16,10 +16,6 @@ class AttendanceController extends Controller
     {
         $today = \Carbon\Carbon::today();
 
-        if ($today->isSaturday() || $today->isSunday()) {
-            $today = $today->next(\Carbon\Carbon::MONDAY);
-        }
-
         $monday = $today->copy()->startOfWeek(\Carbon\Carbon::MONDAY);
         $friday = $monday->copy()->addDays(4);
         $previousSaturday = $monday->copy()->subDays(2);

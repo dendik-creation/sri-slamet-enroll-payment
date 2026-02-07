@@ -28,13 +28,14 @@ class EmployeeSalaryController extends Controller
     private function getWeekRange()
     {
         $today = \Carbon\Carbon::today();
+
         $monday = $today->copy()->startOfWeek(\Carbon\Carbon::MONDAY);
         $friday = $monday->copy()->addDays(4);
         $previousSaturday = $monday->copy()->subDays(2);
 
         return [
-            "start_date" => $previousSaturday->format("Y-m-d"),
-            "end_date" => $friday->format("Y-m-d"),
+            'start_date' => $previousSaturday->format('Y-m-d'),
+            'end_date' => $friday->format('Y-m-d'),
         ];
     }
 
@@ -192,14 +193,10 @@ class EmployeeSalaryController extends Controller
 
     public function monthlyView(Request $request)
     {
-        $start_date = $request->input(
-            "start_date",
-            now()->startOfMonth()->format("Y-m-d"),
-        );
-        $end_date = $request->input(
-            "end_date",
-            now()->endOfMonth()->format("Y-m-d"),
-        );
+        $month = (int) $request->input("month", now()->format('n')); // ensure 1-12
+        $year = $request->input("year", now()->year);
+        $start_date = Carbon::create($year, $month, 1)->startOfMonth()->format("Y-m-d");
+        $end_date = Carbon::create($year, $month, 1)->endOfMonth()->format("Y-m-d");
         $deductions = SalaryDeduction::whereIn("target_employee", [
             Employee::EMPLOYEE_MONTHLY,
             "all",
@@ -288,8 +285,8 @@ class EmployeeSalaryController extends Controller
             "description" =>
                 "Data berasal dari kalkulasi hari kerja. Data dibawah akan disimpan gaji ketika tombol simpan ditekan",
             "salaries" => $paginator,
-            "start_date" => $start_date,
-            "end_date" => $end_date,
+            "month" => $month,
+            "year" => $year,
             "expected_employees" => $expected_employees,
         ]);
     }
@@ -305,6 +302,7 @@ class EmployeeSalaryController extends Controller
             "end_date",
             $this->getWeekRange()["end_date"],
         );
+        $salary_date = $request->input("salary_date", now()->format("Y-m-d"));
         $bonuses = $request->input("bonuses", []);
 
         // Eager load only necessary fields for performance
@@ -432,7 +430,7 @@ class EmployeeSalaryController extends Controller
             $latestDate = $periodEnd;
             $finalSalaries[] = [
                 "employee_id" => $salary["employee_id"],
-                "salary_date" => $now->format("Y-m-d"),
+                "salary_date" => $salary_date,
                 "period_start" => $periodStart,
                 "period_end" => $periodEnd,
                 "month" => Carbon::parse($latestDate)->month,
@@ -839,8 +837,14 @@ class EmployeeSalaryController extends Controller
 
     public function storeMonthlySalary(Request $request)
     {
-        $start_date = $request->input("start_date");
-        $end_date = $request->input("end_date");
+        $month = (int) $request->input("month", now()->format('n')); // ensure 1-12
+        $year = $request->input("year", now()->year);
+        $start_date = Carbon::create($year, $month, 1)->startOfMonth()->format("Y-m-d");
+        $end_date = Carbon::create($year, $month, 1)->endOfMonth()->format("Y-m-d");
+        $salary_date = $request->input(
+            "salary_date",
+            now()->format("Y-m-d"),
+        );
         $with_print = $request->input("with_print", false);
         $bonuses = $request->input("bonuses", []);
         $now = now();
@@ -935,7 +939,7 @@ class EmployeeSalaryController extends Controller
 
             $finalSalaries[] = [
                 "employee_id" => $salary["employee_id"],
-                "salary_date" => $now->format("Y-m-d"),
+                "salary_date" => $salary_date,
                 "period_start" => $start_date,
                 "period_end" => $end_date,
                 "month" => $start_date
@@ -982,10 +986,10 @@ class EmployeeSalaryController extends Controller
                 "Gaji bulanan berhasil disimpan dan siap dicetak.",
             );
             return Inertia::location(
-                "/salary-monthly/print?start_date=" .
-                    $start_date .
-                    "&end_date=" .
-                    $end_date,
+                "/salary-monthly/print?month=" .
+                    $month .
+                    "&year=" .
+                    $year,
             );
         } else {
             Session::flash("success", "Gaji bulanan berhasil disimpan.");
@@ -1063,8 +1067,13 @@ class EmployeeSalaryController extends Controller
 
     public function printMonthlySalaryReport(Request $request)
     {
-        $start_date = $request->input("start_date");
-        $end_date = $request->input("end_date");
+        $month = (int) $request->input(
+            "month",
+            now()->format('n'),
+        ); // ensure 1-12
+        $year = $request->input("year", now()->year);
+        $start_date = Carbon::create($year, $month, 1)->startOfMonth()->format("Y-m-d");
+        $end_date = Carbon::create($year, $month, 1)->endOfMonth()->format("Y-m-d");
 
         $salaries = Salary::with("employee", "bonuses")
             ->whereHas("employee", function ($query) {
@@ -1114,8 +1123,8 @@ class EmployeeSalaryController extends Controller
             "title" => "Laporan Gaji Bulanan",
             "description" => "CV Sri Slamet",
             "salaries" => $salaries,
-            "start_date" => $start_date,
-            "end_date" => $end_date,
+            "month" => $month,
+            "year" => $year,
             "total_remaining_instalment" => $total_remaining_instalment,
         ]);
     }

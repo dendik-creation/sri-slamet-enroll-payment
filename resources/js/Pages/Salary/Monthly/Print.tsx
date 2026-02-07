@@ -2,20 +2,38 @@ import { floatToIdCurrency, ymdToIdDate } from "@/Components/helper/helper";
 import { SalaryMonthlyPrintProps } from "@/types/salaries";
 import React from "react";
 import DotMatrixLayout from "@/Partials/DotMatrixLayout";
+import { SelectOption } from "@/types/global";
+
+const months: SelectOption[] = [
+    { label: "Januari", value: "1" },
+    { label: "Februari", value: "2" },
+    { label: "Maret", value: "3" },
+    { label: "April", value: "4" },
+    { label: "Mei", value: "5" },
+    { label: "Juni", value: "6" },
+    { label: "Juli", value: "7" },
+    { label: "Agustus", value: "8" },
+    { label: "September", value: "9" },
+    { label: "Oktober", value: "10" },
+    { label: "November", value: "11" },
+    { label: "Desember", value: "12" },
+];
 
 const SalaryMonthlyPrint = ({
     title,
     description,
     salaries,
-    start_date,
-    end_date,
+    month,
+    year,
     total_remaining_instalment,
 }: SalaryMonthlyPrintProps) => {
     const subheader = (
         <>
-            <strong>Rentang Tanggal:</strong>{" "}
+            <strong>Untuk Bulan:</strong>{" "}
             <span style={{ fontFamily: "'Courier New', Courier, monospace" }}>
-                {ymdToIdDate(start_date)} - {ymdToIdDate(end_date)}
+                {months.find((m) => m.value === month.toString())?.label ||
+                    month}{" "}
+                {year}
             </span>
         </>
     );

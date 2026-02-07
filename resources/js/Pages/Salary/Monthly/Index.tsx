@@ -38,19 +38,38 @@ import {
     DialogTrigger,
 } from "@/Components/ui/dialog";
 
+const months: SelectOption[] = [
+    { label: "Januari", value: "1" },
+    { label: "Februari", value: "2" },
+    { label: "Maret", value: "3" },
+    { label: "April", value: "4" },
+    { label: "Mei", value: "5" },
+    { label: "Juni", value: "6" },
+    { label: "Juli", value: "7" },
+    { label: "Agustus", value: "8" },
+    { label: "September", value: "9" },
+    { label: "Oktober", value: "10" },
+    { label: "November", value: "11" },
+    { label: "Desember", value: "12" },
+];
+
 const SalaryMonthlyIndex = ({
     title,
     description,
     salaries,
-    start_date,
-    end_date,
+    month,
+    year,
     expected_employees,
 }: SalaryMonthlyIndexProps) => {
     const [onStoring, setOnStoring] = useState(false);
     const [filterData, setFilterData] = useState({
-        start_date: start_date || "",
-        end_date: end_date || "",
+        month: month.toString(),
+        year: year.toString() || new Date().getFullYear().toString(),
     });
+
+    const [salaryDate, setSalaryDate] = useState<string>(
+        new Date().toISOString().slice(0, 10),
+    );
 
     const [salaryBonusForm, setSalaryBonusForm] = useState<
         SalaryBonusFormProps[]
@@ -63,24 +82,39 @@ const SalaryMonthlyIndex = ({
         },
     ]);
 
-    const debouncedFilter = inputDebounce(
-        (start_date: string, end_date: string) => {
-            router.get(
-                "/salary-monthly",
-                { start_date, end_date },
-                {
-                    preserveState: true,
-                    replace: true,
-                },
-            );
-        },
-    );
+    const debouncedFilter = inputDebounce((month: string, year: string) => {
+        router.get(
+            "/salary-monthly",
+            { month, year },
+            {
+                preserveState: true,
+                replace: true,
+            },
+        );
+    });
 
-    const handleDate = (start_date: string, end_date: string) => {
+    const handleChangeFilter = (
+        field: keyof typeof filterData,
+        value: string,
+    ) => {
         setFilterData((prev) => {
-            const newData = { ...prev, start_date, end_date };
-            debouncedFilter(newData.start_date, newData.end_date);
-            return newData;
+            const newFilter = { ...prev, [field]: value };
+            if (field === "month" || field === "year") {
+                const monthNum = Number(
+                    field === "month" ? value : newFilter.month,
+                );
+                const yearNum = Number(
+                    field === "year" ? value : newFilter.year,
+                );
+                const start_date = new Date(yearNum, monthNum - 1, 1)
+                    .toISOString()
+                    .slice(0, 10);
+                const end_date = new Date(yearNum, monthNum, 0)
+                    .toISOString()
+                    .slice(0, 10);
+                debouncedFilter(newFilter.month, newFilter.year);
+            }
+            return newFilter;
         });
     };
 
@@ -174,9 +208,10 @@ const SalaryMonthlyIndex = ({
             "/salary-monthly/store",
             {
                 with_print,
-                start_date: filterData.start_date,
-                end_date: filterData.end_date,
+                month: filterData.month,
+                year: filterData.year,
                 bonuses: salaryBonusForm,
+                salary_date: salaryDate,
             },
             {
                 preserveState: true,
@@ -193,34 +228,37 @@ const SalaryMonthlyIndex = ({
             <div className="flex lg:flex-row flex-col lg:gap-0 gap-3 items-start lg:items-center justify-between mb-4">
                 <div className="flex-1 flex items-center justify-between relative w-full">
                     <div className="flex items-center w-full gap-3">
-                        <span>Data ditampilkan untuk tanggal</span>
-                        <DatePickerInput
-                            className="w-fit"
-                            value={
-                                filterData.start_date && filterData.end_date
-                                    ? {
-                                          from: new Date(filterData.start_date),
-                                          to: new Date(filterData.end_date),
-                                      }
-                                    : undefined
-                            }
-                            placeholder="Pilih rentang tanggal"
-                            mode="range"
-                            onChange={(dateRange) => {
-                                if (
-                                    dateRange &&
-                                    typeof dateRange === "string"
-                                ) {
-                                    const [start, end] = dateRange.split(" - ");
-                                    handleDate(
-                                        start?.trim() || "",
-                                        end?.trim() || "",
+                        <span>Data ditampilkan untuk bulan</span>
+                        <div className="">
+                            <SelectSearchInput
+                                value={filterData.month}
+                                options={months}
+                                onChange={(value) => {
+                                    handleChangeFilter(
+                                        "month",
+                                        value.toString(),
                                     );
-                                } else {
-                                    handleDate("", "");
-                                }
-                            }}
-                        />
+                                }}
+                            />
+                        </div>
+                        <div className="">
+                            <SelectSearchInput
+                                value={filterData.year}
+                                options={Array.from({ length: 11 }, (_, i) => {
+                                    const yr = new Date().getFullYear() - 5 + i;
+                                    return {
+                                        label: yr.toString(),
+                                        value: yr.toString(),
+                                    };
+                                })}
+                                onChange={(value) => {
+                                    handleChangeFilter(
+                                        "year",
+                                        value.toString(),
+                                    );
+                                }}
+                            />
+                        </div>
                     </div>
                     <Dialog>
                         <DialogTrigger asChild>
@@ -249,6 +287,23 @@ const SalaryMonthlyIndex = ({
                                     karyawan sekaligus (Opsional).
                                 </DialogDescription>
                                 <div className="flex flex-col gap-3">
+                                    <div className="w-fit">
+                                        <label className="mb-1">
+                                            Tanggal Gaji Diberikan Karyawan
+                                        </label>
+                                        <div className="w-full">
+                                            <DatePickerInput
+                                                mode="single"
+                                                placeholder="Pilih tanggal gajian"
+                                                value={salaryDate}
+                                                onChange={(value) =>
+                                                    setSalaryDate(
+                                                        value?.toString() || "",
+                                                    )
+                                                }
+                                            />
+                                        </div>
+                                    </div>
                                     <div className="flex justify-start">
                                         <Button
                                             type="button"

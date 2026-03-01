@@ -9,18 +9,41 @@ import {
     TableHeader,
     TableRow,
 } from "@/Components/ui/table";
-import { Eye, Plus, SearchXIcon, Trash } from "lucide-react";
+import { Eye, Plus, Printer, SearchXIcon, Trash } from "lucide-react";
 import { floatToIdCurrency, ymdToIdDate } from "@/Components/helper/helper";
 import { Button } from "@/Components/ui/button";
-import { Link, router } from "@inertiajs/react";
+import { Link, router, useForm } from "@inertiajs/react";
 import ConfirmDialog from "@/Components/custom/ConfirmDialog";
-import { PaginatorBuilder } from "@/Components/custom/FormElement";
+import {
+    PaginatorBuilder,
+    SelectSearchInput,
+} from "@/Components/custom/FormElement";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/Components/ui/dialog";
 const ThrBonusIndex = ({
     title,
     description,
     thr_bonuses,
     is_thr_given,
 }: ThrBonusIndexProps) => {
+    const {
+        data: leggerForm,
+        setData: setLeggerForm,
+        reset: resetLeggerForm,
+    } = useForm({
+        thr_id: "",
+    });
+    const available_years = thr_bonuses.data.map((thr) => ({
+        label: thr.year,
+        value: thr.id.toString(),
+    }));
     const currentYear = new Date().getFullYear();
     const storeThrCurrentYear = () => {
         router.post(
@@ -31,7 +54,7 @@ const ThrBonusIndex = ({
             {
                 replace: true,
                 preserveState: true,
-            }
+            },
         );
     };
     const handleDelete = (thrId: number) => {
@@ -40,27 +63,89 @@ const ThrBonusIndex = ({
             replace: true,
         });
     };
+
+    const readyPrintLegger = () => {
+        router.get(`/thr/${leggerForm.thr_id}/print-legger`, {
+            preserveState: true,
+            replace: true,
+        });
+    };
     return (
         <AppLayout>
             <div className="flex justify-between items-center">
                 <PageTitle title={title} description={description} />
-                <ConfirmDialog
-                    disabled={is_thr_given}
-                    triggerNode={
-                        <Button
-                            disabled={is_thr_given}
-                            variant={"blue"}
-                            className="flex items-center gap-2"
-                        >
-                            <Plus />
-                            Tambah THR untuk {currentYear}
-                        </Button>
-                    }
-                    title="Konfirmasi Tambah THR"
-                    description={`Apakah Anda yakin ingin menambah THR untuk tahun ${currentYear}?`}
-                    type="info"
-                    confirmAction={storeThrCurrentYear}
-                />
+                <div className="flex items-center gap-3">
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button
+                                variant={"green"}
+                                type="button"
+                                className="cursor-pointer"
+                                onClick={() => resetLeggerForm()}
+                            >
+                                <Printer />
+                                <span>Cetak Legger</span>
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-5xl">
+                            <DialogHeader>
+                                <DialogTitle>Cetak Legger</DialogTitle>
+                                <DialogDescription>
+                                    Pilih tahun yang ingin dicetak
+                                </DialogDescription>
+
+                                <div className="flex flex-col gap-3">
+                                    <div className="grid lg:grid-cols-2 grid-cols-1 gap-3 mt-4">
+                                        <div className="flex flex-col w-full">
+                                            <label className="text-base mb-1 after:content-['*'] after:text-red-500 after:ml-1">
+                                                Tahun THR
+                                            </label>
+                                            <div className="">
+                                                <SelectSearchInput
+                                                    placeholder="Pilih Tahun"
+                                                    options={available_years}
+                                                    value={leggerForm.thr_id}
+                                                    onChange={(value) =>
+                                                        setLeggerForm(
+                                                            "thr_id",
+                                                            value.toString(),
+                                                        )
+                                                    }
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </DialogHeader>
+                            <DialogFooter>
+                                <Button
+                                    onClick={readyPrintLegger}
+                                    variant={"green"}
+                                >
+                                    <Printer />
+                                    <span>Cetak</span>
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                    <ConfirmDialog
+                        disabled={is_thr_given}
+                        triggerNode={
+                            <Button
+                                disabled={is_thr_given}
+                                variant={"blue"}
+                                className="flex items-center gap-2"
+                            >
+                                <Plus />
+                                Tambah THR untuk {currentYear}
+                            </Button>
+                        }
+                        title="Konfirmasi Tambah THR"
+                        description={`Apakah Anda yakin ingin menambah THR untuk tahun ${currentYear}?`}
+                        type="info"
+                        confirmAction={storeThrCurrentYear}
+                    />
+                </div>
             </div>
 
             <div className="rounded-md border">
@@ -101,7 +186,7 @@ const ThrBonusIndex = ({
                                     </TableCell>
                                     <TableCell>
                                         {floatToIdCurrency(
-                                            thr.total_amount ?? 0
+                                            thr.total_amount ?? 0,
                                         )}
                                     </TableCell>
                                     <TableCell>

@@ -27,7 +27,7 @@ class ThrController extends Controller
 
     public function index()
     {
-        $thr_bonuses = ThrBonus::with("employee_thrs")->paginate(10);
+        $thr_bonuses = ThrBonus::with("employee_thrs")->paginate(50);
         $is_thr_given = ThrBonus::where("year", date("Y"))->exists();
         return Inertia::render("ThrBonus/Index", [
             "title" => "THR Karyawan",
@@ -134,6 +134,20 @@ class ThrController extends Controller
         return Inertia::location("/thr");
     }
 
+    public function printLegger($thr_bonus_id)
+    {
+        $thr_bonus = ThrBonus::with(
+            "employee_thrs.employee.position",
+        )->findOrFail($thr_bonus_id);
+        return Inertia::render("ThrBonus/PrintLegger", [
+            "title" => "Legger THR Karyawan Tahun {$thr_bonus->year}",
+            "description" => "Legger THR karyawan untuk tahun {$thr_bonus->year}",
+            "thr_bonus" => $thr_bonus,
+            "company_name" => "CV Sri Slamet",
+            "back_url" => "/thr/{$thr_bonus_id}",
+        ]);
+    }
+
     public function printAll($thr_bonus_id)
     {
         $thr_bonus = ThrBonus::with(
@@ -144,7 +158,7 @@ class ThrController extends Controller
             "description" => "Cetak semua THR karyawan untuk tahun {$thr_bonus->year}",
             "thr_bonus" => $thr_bonus,
             "company_name" => "CV Sri Slamet",
-            "back_url" => "/thr/{$thr_bonus_id}",
+            "back_url" => "/thr",
         ]);
     }
 

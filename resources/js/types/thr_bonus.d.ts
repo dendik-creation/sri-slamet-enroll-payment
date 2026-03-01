@@ -1,6 +1,6 @@
 import { PageTitleProps } from "@/Partials/PageTitle";
 import { Employee } from "./employee";
-import { PaginationData } from "./global";
+import { PaginationData, SelectOption } from "./global";
 
 export type ThrBonus = {
     id: number;
@@ -35,6 +35,12 @@ export type ThrBonusPrintAllProps = PageTitleProps & {
 
 export type ThrBonusPrintSpecificProps = PageTitleProps & {
     employee_thr: EmployeeThrBonus;
+    company_name: string;
+    back_url: string;
+};
+
+export type ThrBonusPrintLeggerProps = PageTitleProps & {
+    thr_bonus: ThrBonus;
     company_name: string;
     back_url: string;
 };

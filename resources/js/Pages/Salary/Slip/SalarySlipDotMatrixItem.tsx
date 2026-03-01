@@ -13,7 +13,6 @@ const SalarySlipDotMatrixItem: React.FC<SalarySlipDotMatrixItemProps> = ({
     companyName = "Nama CV",
     printDate,
 }) => {
-    console.log(salary);
     return (
         <div
             className="thermal-receipt"
@@ -186,10 +185,10 @@ const SalarySlipDotMatrixItem: React.FC<SalarySlipDotMatrixItemProps> = ({
                         <td style={{ padding: "2px 4px" }}>
                             {salary.employee.salary_type == "daily"
                                 ? floatToIdCurrency(
-                                      salary.employee.salary_per_day
+                                      salary.employee.salary_per_day,
                                   )
                                 : floatToIdCurrency(
-                                      salary.employee.salary_per_month || 0
+                                      salary.employee.salary_per_month || 0,
                                   )}
                         </td>
                     </tr>
@@ -266,8 +265,8 @@ const SalarySlipDotMatrixItem: React.FC<SalarySlipDotMatrixItemProps> = ({
                                 {floatToIdCurrency(
                                     salary.bonuses?.reduce(
                                         (acc, bonus) => acc + bonus.amount,
-                                        0
-                                    ) ?? 0
+                                        0,
+                                    ) ?? 0,
                                 )}
                             </td>
                         </tr>
@@ -326,7 +325,7 @@ const SalarySlipDotMatrixItem: React.FC<SalarySlipDotMatrixItemProps> = ({
                                             }}
                                         >
                                             {floatToIdCurrency(
-                                                deduction.amount
+                                                deduction.amount,
                                             )}
                                         </td>
                                     </tr>
@@ -348,7 +347,7 @@ const SalarySlipDotMatrixItem: React.FC<SalarySlipDotMatrixItemProps> = ({
                                         >
                                             {floatToIdCurrency(
                                                 salary.instalment_payment
-                                                    ?.payment_value ?? 0
+                                                    ?.payment_value ?? 0,
                                             )}
                                         </td>
                                     </tr>

@@ -29,47 +29,70 @@ const PrintSpesific = ({
                 }}
             >
                 <style>{`
+                    /* Print tuning for 80mm thermal printers */
                     @media print {
                         @page {
+                            /* Let height be auto so receipt length adjusts */
                             size: 80mm 297mm;
                             margin: 2mm;
-                            orientation: portrait;
+                            orientation : portrait;
                         }
                         html, body {
                             width: 80mm;
                             margin: 0;
                             padding: 0;
-                            font-size: 12px;
+                            font-size: 12pt; /* more reliable for printers */
+                            color: #000 !important;
+                            background: #fff !important;
                         }
                         * {
                             -webkit-print-color-adjust: exact !important;
-                            color-adjust: exact !important;
                             print-color-adjust: exact !important;
                         }
                         .thermal-receipt {
                             width: 76mm !important;
                             max-width: 76mm !important;
-                            font-size: 12px !important;
-                            line-height: 1.3 !important;
+                            font-size: 12pt !important; /* increase from px to pt */
+                            line-height: 1.4 !important; /* slightly taller for clarity */
+                            letter-spacing: 0.1pt !important; /* improve legibility on dot-matrix */
                             margin: 0 !important;
                             padding: 2mm !important;
+                            color: #000 !important;
+                            background: #fff !important;
+                            page-break-after: always;
                         }
+                        .thermal-receipt:last-child { page-break-after: auto; }
+
                         .thermal-receipt table {
                             width: 100% !important;
-                            font-size: 10px !important;
+                            font-size: 11pt !important; /* was 10px */
+                            border-collapse: collapse !important;
                         }
+                        .thermal-receipt table td { padding: 1.5pt 2pt !important; }
+
                         .thermal-receipt .header-title {
-                            font-size: 14px !important;
-                            font-weight: bold !important;
+                            font-size: 16pt !important; /* stronger title */
+                            font-weight: 700 !important;
+                            letter-spacing: 0.2pt !important;
+                            color: #000 !important;
                         }
                         .thermal-receipt .section-title {
-                            font-size: 11px !important;
-                            font-weight: bold !important;
+                            font-size: 12.5pt !important;
+                            font-weight: 700 !important;
+                            letter-spacing: 0.15pt !important;
+                            color: #000 !important;
                         }
                         .thermal-receipt .amount-final {
-                            font-size: 13px !important;
-                            font-weight: bold !important;
+                            font-size: 14.5pt !important;
+                            font-weight: 700 !important;
+                            letter-spacing: 0.2pt !important;
+                            color: #000 !important;
                         }
+
+                        /* Solid separators print better than dashed */
+                        .thermal-receipt .separator-top { border-top: 1.2pt solid #000 !important; }
+                        .thermal-receipt .separator-bottom { border-bottom: 1.2pt solid #000 !important; }
+                        .thermal-receipt .heavy-top { border-top: 2pt solid #000 !important; }
                     }
                     @media screen {
                         .thermal-receipt {
@@ -82,7 +105,7 @@ const PrintSpesific = ({
                 `}</style>
                 {/* Header */}
                 <div
-                    className="header-title"
+                    className="header-title separator-bottom"
                     style={{
                         textAlign: "center",
                         fontWeight: "bold",
@@ -144,7 +167,7 @@ const PrintSpesific = ({
                             <td style={{ padding: "2px 4px" }}>
                                 {ymdToIdDate(
                                     employee_thr?.employee?.join_date.toString() ||
-                                        new Date().toISOString()
+                                        new Date().toISOString(),
                                 )}
                             </td>
                         </tr>
@@ -153,9 +176,9 @@ const PrintSpesific = ({
 
                 {/* THR Amount */}
                 <div
-                    className="section-title"
+                    className="section-title heavy-top"
                     style={{
-                        borderTop: "1px dashed #000",
+                        borderTop: "2px solid #000",
                         paddingTop: 8,
                         textAlign: "center",
                         fontWeight: "bold",
@@ -165,7 +188,7 @@ const PrintSpesific = ({
                     THR DITERIMA
                 </div>
                 <div
-                    className="amount-final"
+                    className="amount-final separator-bottom"
                     style={{
                         textAlign: "center",
                         fontWeight: "bold",

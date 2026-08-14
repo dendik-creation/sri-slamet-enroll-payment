@@ -34,8 +34,8 @@ class EmployeeSalaryController extends Controller
         $previousSaturday = $monday->copy()->subDays(2);
 
         return [
-            'start_date' => $previousSaturday->format('Y-m-d'),
-            'end_date' => $friday->format('Y-m-d'),
+            "start_date" => $previousSaturday->format("Y-m-d"),
+            "end_date" => $friday->format("Y-m-d"),
         ];
     }
 
@@ -193,10 +193,14 @@ class EmployeeSalaryController extends Controller
 
     public function monthlyView(Request $request)
     {
-        $month = (int) $request->input("month", now()->format('n')); // ensure 1-12
+        $month = (int) $request->input("month", now()->format("n")); // ensure 1-12
         $year = $request->input("year", now()->year);
-        $start_date = Carbon::create($year, $month, 1)->startOfMonth()->format("Y-m-d");
-        $end_date = Carbon::create($year, $month, 1)->endOfMonth()->format("Y-m-d");
+        $start_date = Carbon::create($year, $month, 1)
+            ->startOfMonth()
+            ->format("Y-m-d");
+        $end_date = Carbon::create($year, $month, 1)
+            ->endOfMonth()
+            ->format("Y-m-d");
         $deductions = SalaryDeduction::whereIn("target_employee", [
             Employee::EMPLOYEE_MONTHLY,
             "all",
@@ -837,14 +841,15 @@ class EmployeeSalaryController extends Controller
 
     public function storeMonthlySalary(Request $request)
     {
-        $month = (int) $request->input("month", now()->format('n')); // ensure 1-12
+        $month = (int) $request->input("month", now()->format("n")); // ensure 1-12
         $year = $request->input("year", now()->year);
-        $start_date = Carbon::create($year, $month, 1)->startOfMonth()->format("Y-m-d");
-        $end_date = Carbon::create($year, $month, 1)->endOfMonth()->format("Y-m-d");
-        $salary_date = $request->input(
-            "salary_date",
-            now()->format("Y-m-d"),
-        );
+        $start_date = Carbon::create($year, $month, 1)
+            ->startOfMonth()
+            ->format("Y-m-d");
+        $end_date = Carbon::create($year, $month, 1)
+            ->endOfMonth()
+            ->format("Y-m-d");
+        $salary_date = $request->input("salary_date", now()->format("Y-m-d"));
         $with_print = $request->input("with_print", false);
         $bonuses = $request->input("bonuses", []);
         $now = now();
@@ -986,10 +991,7 @@ class EmployeeSalaryController extends Controller
                 "Gaji bulanan berhasil disimpan dan siap dicetak.",
             );
             return Inertia::location(
-                "/salary-monthly/print?month=" .
-                    $month .
-                    "&year=" .
-                    $year,
+                "/salary-monthly/print?month=" . $month . "&year=" . $year,
             );
         } else {
             Session::flash("success", "Gaji bulanan berhasil disimpan.");
@@ -1067,13 +1069,14 @@ class EmployeeSalaryController extends Controller
 
     public function printMonthlySalaryReport(Request $request)
     {
-        $month = (int) $request->input(
-            "month",
-            now()->format('n'),
-        ); // ensure 1-12
+        $month = (int) $request->input("month", now()->format("n")); // ensure 1-12
         $year = $request->input("year", now()->year);
-        $start_date = Carbon::create($year, $month, 1)->startOfMonth()->format("Y-m-d");
-        $end_date = Carbon::create($year, $month, 1)->endOfMonth()->format("Y-m-d");
+        $start_date = Carbon::create($year, $month, 1)
+            ->startOfMonth()
+            ->format("Y-m-d");
+        $end_date = Carbon::create($year, $month, 1)
+            ->endOfMonth()
+            ->format("Y-m-d");
 
         $salaries = Salary::with("employee", "bonuses")
             ->whereHas("employee", function ($query) {
@@ -1612,7 +1615,23 @@ class EmployeeSalaryController extends Controller
         try {
             $salary->bonuses()->delete();
             $salary->deductions()->delete();
-            $salary->instalmentPayment()->delete();
+
+            $instalmentPayment = $salary->instalmentPayment;
+            if ($instalmentPayment) {
+                Instalment::where("id", $instalmentPayment->instalment_id)->increment(
+                    "remaining_amount",
+                    $instalmentPayment->payment_value,
+                );
+                // Geser mundur step pembayaran-pembayaran setelahnya biar tetap berurutan
+                InstalmentPayment::where(
+                    "instalment_id",
+                    $instalmentPayment->instalment_id,
+                )
+                    ->where("step", ">", $instalmentPayment->step)
+                    ->decrement("step");
+                $instalmentPayment->delete();
+            }
+
             $salary->delete();
 
             DB::commit();

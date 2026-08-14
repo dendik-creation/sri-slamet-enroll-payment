@@ -191,7 +191,8 @@ class InstalmentController extends Controller
                         'paid_at' => $p->paid_at,
                         'order' => $p->id, // stable tie-breaker
                     ];
-                });
+                })
+                ->toBase(); // avoid Eloquent Collection::merge() calling getKey() on plain arrays
 
             $directPaymentsOnly = collect($direct_instalment_payments)
                 ->filter(function ($payment) {
@@ -305,23 +306,8 @@ class InstalmentController extends Controller
         };
 
         $leggerData = $query
-             // Start: Skip lunas, kecuali pembayaran terakhir masih di minggu ini (Sabtu-Jumat)
-            ->where(function ($query) {
-                $query->where('remaining_amount', '>', 0)
-                    ->orWhere(function ($q) {
-                        $now = now();
-                        $startOfWeek = $now->copy()->subDays(($now->dayOfWeek + 1) % 7);
-                        $endOfWeek = $startOfWeek->copy()->addDays(6)->setTime(23, 59, 59);
-
-                        $q->where('remaining_amount', '<=', 0)
-                            ->whereHas('payments', function ($paymentQuery) use ($startOfWeek, $endOfWeek) {
-                                $paymentQuery->orderByDesc('paid_at')
-                                    ->limit(1)
-                                    ->whereBetween('paid_at', [$startOfWeek->format('Y-m-d 00:00:00'), $endOfWeek->format('Y-m-d 23:59:59')]);
-                            });
-                    });
-            })
-            // End: Skip lunas
+            // Lunas (remaining_amount <= 0) gak usah ditampilkan di legger
+            ->where('remaining_amount', '>', 0)
             ->where(function ($q) use ($dateFilter) {
                 $q->whereHas('payments', $dateFilter)
                   ->orWhereDoesntHave('payments');
